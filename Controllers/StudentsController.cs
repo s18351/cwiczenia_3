@@ -22,13 +22,36 @@ namespace StudentsApi.Controllers
         [HttpGet("{id}")]
         public IActionResult Get(string id)
         {
-            return Ok(Database.GetAll().First(a => a.indexNumber == id));
+            try
+            {
+                if (!int.TryParse(id, out _))
+                {
+                    return BadRequest("Index must be number");
+                }
+                return Ok(Database.GetAll().First(a => a.indexNumber == id));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest("Not found");
+            }
         }
 
         // POST api/<StudentsController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public IActionResult Post([FromBody] Student student)
         {
+            try
+            {
+                if (!int.TryParse(student.indexNumber, out _)) return BadRequest("Index must be number");
+                if (Database.GetAll().Any(a => a.indexNumber == student.indexNumber)) return BadRequest("Student already exist");
+
+                Database.SaveAll(Database.GetAll().Append(student));
+                return Ok(student); 
+            }
+            catch (Exception ex)
+            {
+                return BadRequest("Unexpected error occured");
+            }
         }
 
         // PUT api/<StudentsController>/5
@@ -52,8 +75,20 @@ namespace StudentsApi.Controllers
 
         // DELETE api/<StudentsController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public IActionResult Delete(int id)
         {
+            try
+            {
+                IEnumerable<Student> students = Database.GetAll();
+
+                if (!students.Any(a => int.Parse(a.indexNumber) == id)) return BadRequest("Student not found");
+                Database.SaveAll(students.Where(a => int.Parse(a.indexNumber) != id));
+                return Ok("Student removed");
+            }
+            catch (Exception e)
+            {
+                return BadRequest("Incorrect index");
+            }
         }
     }
 }
